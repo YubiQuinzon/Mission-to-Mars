@@ -20,7 +20,8 @@ def scrape_all():
         "news_paragraph": news_paragraph,
         "featured_image": featured_image(browser),
         "facts": mars_facts(),
-        "last_modified": dt.datetime.now() # Returns the date this code was ran
+        "last_modified": dt.datetime.now(), # Returns the date this code was ran
+        "image_dictionary": mars_images(browser)
     }
 
     # Stop webdriver and return data
@@ -97,7 +98,61 @@ def mars_facts():
     # Convert dataframe into HTML format, add bootstrap
     return df.to_html(classes="table table-striped")
 
+def mars_images(browser):
+    # 1. Use browser to visit the URL 
+    url = 'https://marshemispheres.com/'
 
+    browser.visit(url)
+    # 2. Create a dictionary to hold the images and titles.
+    image_list_of_dictionary = []
+
+    # 3. Write code to retrieve the image urls and titles for each hemisphere.
+
+    # Parse the current browsers html using bewutiful soup
+    html = browser.html
+    html_soup = soup(html, 'html.parser')
+
+    try:
+        # Container that contains all the link boxes and their divs w/ links we want to access
+        full_image_container = html_soup.find('div', class_='collapsible results')
+
+        # Creating a list that contains all the boxes htmls that have access to the images href
+        link_boxes = full_image_container.find_all('div', class_='item')
+
+        # We'll create a for loop to go through each of the href and click full image 
+        for x in range(len(link_boxes)):
+            
+            # Going through each tag, and visiting their links
+            image_href = link_boxes[x].find('a', class_='itemLink product-item').get('href')
+            full_link = f'{url}{image_href}'
+            browser.visit(full_link)
+            
+            # Parsing each links html
+            temp_html = browser.html
+            temp_html_soup = soup(temp_html, 'html.parser')
+            
+            # Creating temp dictionary
+            image_dictionary = {}
+            
+            # Finding image title
+            image_title = temp_html_soup.find('h2').get_text().strip()
+            print(image_title)
+            
+            # Finding the image src and creating a link
+            image_src = temp_html_soup.find('img', class_='wide-image').get('src')
+            image_url = (f'{url}{image_src}')
+            
+            image_dictionary['img_url'] = image_url
+            image_dictionary['title'] = image_title
+            
+            # Appending the fake temp into the list of dictionaries
+            image_list_of_dictionary.append(image_dictionary)
+        
+        return image_list_of_dictionary
+
+    except BaseException:
+        return "None"
+        
 if __name__ == "__main__":
     # If running as script, print scraped data
     print(scrape_all())
